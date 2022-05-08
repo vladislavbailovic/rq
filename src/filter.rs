@@ -3,7 +3,6 @@ use crate::error::*;
 pub enum FilterType {
     Current,
     Array,
-    Next,
     Keys,
     Member(usize),
     Entry(String),
@@ -46,23 +45,23 @@ impl Filter {
                 None
             }
 
-            FilterType::Next => {
-                if data.is_array() {
-                    return if let Some(new_data) = data.members().next() {
-                        Some(new_data.clone())
-                    } else {
-                        None
-                    };
-                }
-                if data.is_object() {
-                    return if let Some(new_data) = data.entries().next() {
-                        Some(new_data.1.clone())
-                    } else {
-                        None
-                    };
-                }
-                None
-            }
+            // FilterType::Next => {
+            //     if data.is_array() {
+            //         return if let Some(new_data) = data.members().next() {
+            //             Some(new_data.clone())
+            //         } else {
+            //             None
+            //         };
+            //     }
+            //     if data.is_object() {
+            //         return if let Some(new_data) = data.entries().next() {
+            //             Some(new_data.1.clone())
+            //         } else {
+            //             None
+            //         };
+            //     }
+            //     None
+            // }
 
             FilterType::Keys => {
                 if data.is_array() {
@@ -90,13 +89,11 @@ impl Filter {
                 if data.has_key(name) {
                     Some(data[name].clone())
                 } else {
-                    Some(json::JsonValue::from("no such key"))
+                    None
                 }
             } else {
                 None
             }
-
-            _ => Some(json::JsonValue::from("wat")),
         }
     }
 }
