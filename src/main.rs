@@ -56,7 +56,7 @@ impl ExpressionParser {
                                 Some(Token::Number(num)) => {
                                     sequence.push(FilterType::Member(num.parse::<usize>().unwrap()));
                                 }
-                                Some(Token::Word(word)) => {
+                                Some(Token::Str(word)) => {
                                     sequence.push(FilterType::Entry(word.to_string()));
                                 }
                                 _ => {
@@ -117,6 +117,18 @@ mod test {
         assert_eq!(FilterType::Current, filters[0], "first filter type should be current");
         assert_eq!(FilterType::Array, filters[1], "second filter type should be array");
         assert_eq!(FilterType::Keys, filters[2], "last filter type should be keys");
+    }
+
+    #[test]
+    fn parses_generic_object_index() {
+        let mut parser = ExpressionParser::new("[\"what\"]");
+        let result = parser.parse();
+
+        assert!(result.is_ok(), "should be a success");
+
+        let filters = result.unwrap();
+        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(FilterType::Entry("what".to_string()), filters[0], "first filter type should be current");
     }
 
     #[test]

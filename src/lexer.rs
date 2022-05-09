@@ -6,6 +6,7 @@ pub enum Token {
     CloseBracket,
     Number(String),
     Word(String),
+    Str(String),
     Dot,
     Bar,
     Any(char),
@@ -52,6 +53,16 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
                     '|' => Some(Token::Bar),
                     '[' => Some(Token::OpenBracket),
                     ']' => Some(Token::CloseBracket),
+                    '"' => {
+                        let mut string = String::new();
+                        while let Some(c) = self.source.next() {
+                            if '"' == c {
+                                return Some(Token::Str(string));
+                            }
+                            string.push(c);
+                        }
+                        Some(Token::Any(c))
+                    }
                     _ => {
 
                         // Number
