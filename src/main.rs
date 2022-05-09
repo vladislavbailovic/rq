@@ -30,6 +30,7 @@ impl ExpressionParser {
         self.next();
         while self.token.is_some() {
             match &self.token {
+                Some(Token::Bar) => {}
                 Some(Token::Dot) => {
                     if let Some(t) = self.lex.peek() {
                         match t {
@@ -75,7 +76,9 @@ impl ExpressionParser {
                         _ => return Err(Error::ParseExpression(format!("unknown keyword: {}", word))),
                     }
                 }
-                _ => {}
+                _ => {
+                    return Err(Error::ParseExpression(format!("unexpected token: {:?}", self.token.as_ref().unwrap())));
+                }
             }
             self.next();
         }
@@ -118,7 +121,15 @@ mod test {
 
     #[test]
     fn expects_number_for_array_member() {
-        let mut parser = ExpressionParser::new("[.]");
+        let mut parser = ExpressionParser::new("[|]");
+        let result = parser.parse();
+
+        assert!(result.is_err(), "should not be a success");
+    }
+
+    #[test]
+    fn expects_valid_tokens_sequence() {
+        let mut parser = ExpressionParser::new("(what the...)");
         let result = parser.parse();
 
         assert!(result.is_err(), "should not be a success");

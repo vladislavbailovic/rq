@@ -7,6 +7,8 @@ pub enum Token {
     Number(String),
     Word(String),
     Dot,
+    Bar,
+    Any(char),
 }
 
 #[derive(Debug)]
@@ -47,6 +49,7 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
             Some(c) => {
                 match c {
                     '.' => Some(Token::Dot),
+                    '|' => Some(Token::Bar),
                     '[' => Some(Token::OpenBracket),
                     ']' => Some(Token::CloseBracket),
                     _ => {
@@ -79,6 +82,10 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
                                 }
                             }
                             return Some(Token::Word(word.iter().collect()));
+                        }
+
+                        if !c.is_whitespace() {
+                            return Some(Token::Any(c));
                         }
 
                         self.next()
