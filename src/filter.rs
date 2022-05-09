@@ -1,6 +1,6 @@
 use crate::error::*;
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum FilterType {
     Current,
     Array,

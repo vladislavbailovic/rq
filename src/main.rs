@@ -39,7 +39,6 @@ impl ExpressionParser {
                             }
                             _ => {
                                 sequence.push(FilterType::Current);
-                                self.lex.next();
                             }
                         }
                     }
@@ -48,22 +47,26 @@ impl ExpressionParser {
                     self.token = self.lex.next();
                     if let Some(Token::CloseBracket) = &self.token {
                         sequence.push(FilterType::Array);
-                    } else if let Some(Token::Number(num)) = self.token.clone() {
-                        self.next();
-                        if let Some(Token::CloseBracket) = &self.token {
-                            sequence.push(FilterType::Member(num.parse::<usize>().unwrap()));
-                        } else {
-                            return Err(Error::ParseExpression("expected close bracket after number".to_string()));
-                        }
-                    } else if let Some(Token::Word(word)) = self.token.clone() {
-                        self.next();
-                        if let Some(Token::CloseBracket) = &self.token {
-                            sequence.push(FilterType::Entry(word.to_string()));
-                        } else {
-                            return Err(Error::ParseExpression("expected close bracket after word".to_string()));
-                        }
                     } else {
-                        return Err(Error::ParseExpression("expected number, word or close bracket".to_string()));
+                        let old = self.token.clone();
+                        self.next();
+                        if let Some(Token::CloseBracket) = &self.token {
+                            match old {
+                                Some(Token::Number(num)) => {
+                                    sequence.push(FilterType::Member(num.parse::<usize>().unwrap()));
+                                }
+                                Some(Token::Word(word)) => {
+                                    sequence.push(FilterType::Entry(word.to_string()));
+                                }
+                                _ => {
+                                    return Err(
+                                        Error::ParseExpression("expected number, word or close bracket".to_string())
+                                    );
+                                }
+                            }
+                        } else {
+                            return Err(Error::ParseExpression("expected close bracket".to_string()));
+                        }
                     }
                 }
                 Some(Token::Word(word)) => {
@@ -82,8 +85,9 @@ impl ExpressionParser {
 }
 
 fn main() -> Result<(), Error> {
-    let mut parser = ExpressionParser::new(".[]|keys");
+    let mut parser = ExpressionParser::new(".[0]|.name");
     let filters = parser.parse()?;
+    println!("{:?}", filters);
 
     let filename = "test-data/one.json";
     let contents = std::fs::read_to_string(filename)?;
@@ -94,3 +98,29 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn parses_keys_expr() {
+        let mut parser = ExpressionParser::new(".[]|keys");
+        let result = parser.parse();
+
+        assert!(result.is_ok(), "should be a success");
+
+        let filters = result.unwrap();
+        assert_eq!(3, filters.len(), "there should be 3 filters");
+        assert_eq!(FilterType::Current, filters[0], "first filter type should be current");
+        assert_eq!(FilterType::Array, filters[1], "second filter type should be array");
+        assert_eq!(FilterType::Keys, filters[2], "last filter type should be keys");
+    }
+
+    #[test]
+    fn expects_number_for_array_member() {
+        let mut parser = ExpressionParser::new("[.]");
+        let result = parser.parse();
+
+        assert!(result.is_err(), "should not be a success");
+    }
+}
