@@ -1,13 +1,12 @@
 use std::iter::Peekable;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Token {
     OpenBracket,
     CloseBracket,
     Number(String),
     Word(String),
     Dot,
-    None(char)
 }
 
 #[derive(Debug)]
