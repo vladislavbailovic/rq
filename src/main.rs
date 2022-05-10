@@ -9,13 +9,13 @@ use lexer::*;
 
 struct ExpressionParser {
     lex: Lexer<std::vec::IntoIter<char>>,
-    token: Option<Token>
+    token: Option<Token>,
 }
 
 impl ExpressionParser {
     pub fn new(source: &str) -> Self {
         let lex = Lexer::new(source);
-        Self{ lex, token: None }
+        Self { lex, token: None }
     }
 
     fn next(&mut self) -> Result<(), Error> {
@@ -24,7 +24,7 @@ impl ExpressionParser {
     }
 
     pub fn parse(&mut self) -> Result<Vec<FilterType>, Error> {
-        let mut sequence= Vec::new();
+        let mut sequence = Vec::new();
 
         self.next()?;
         while self.token.is_some() {
@@ -53,30 +53,34 @@ impl ExpressionParser {
                         if let Some(Token::CloseBracket) = &self.token {
                             match old {
                                 Some(Token::Number(num)) => {
-                                    sequence.push(FilterType::Member(num.parse::<usize>().unwrap()));
+                                    sequence
+                                        .push(FilterType::Member(num.parse::<usize>().unwrap()));
                                 }
                                 Some(Token::Str(word)) => {
                                     sequence.push(FilterType::Entry(word.to_string()));
                                 }
                                 _ => {
-                                    return Err(
-                                        Error::ParseExpression("expected number, word or close bracket".to_string())
-                                    );
+                                    return Err(Error::ParseExpression(
+                                        "expected number, word or close bracket".to_string(),
+                                    ));
                                 }
                             }
                         } else {
-                            return Err(Error::ParseExpression("expected close bracket".to_string()));
+                            return Err(Error::ParseExpression(
+                                "expected close bracket".to_string(),
+                            ));
                         }
                     }
                 }
-                Some(Token::Word(word)) => {
-                    match word.as_str() {
-                        "keys" => sequence.push(FilterType::Keys),
-                        _ => return Err(Error::ParseExpression(format!("unknown keyword: {}", word))),
-                    }
-                }
+                Some(Token::Word(word)) => match word.as_str() {
+                    "keys" => sequence.push(FilterType::Keys),
+                    _ => return Err(Error::ParseExpression(format!("unknown keyword: {}", word))),
+                },
                 _ => {
-                    return Err(Error::ParseExpression(format!("unexpected token: {:?}", self.token.as_ref().unwrap())));
+                    return Err(Error::ParseExpression(format!(
+                        "unexpected token: {:?}",
+                        self.token.as_ref().unwrap()
+                    )));
                 }
             }
             self.next()?;
@@ -113,9 +117,21 @@ mod test {
 
         let filters = result.unwrap();
         assert_eq!(3, filters.len(), "there should be 3 filters");
-        assert_eq!(FilterType::Current, filters[0], "first filter type should be current");
-        assert_eq!(FilterType::Array, filters[1], "second filter type should be array");
-        assert_eq!(FilterType::Keys, filters[2], "last filter type should be keys");
+        assert_eq!(
+            FilterType::Current,
+            filters[0],
+            "first filter type should be current"
+        );
+        assert_eq!(
+            FilterType::Array,
+            filters[1],
+            "second filter type should be array"
+        );
+        assert_eq!(
+            FilterType::Keys,
+            filters[2],
+            "last filter type should be keys"
+        );
     }
 
     #[test]
@@ -127,7 +143,11 @@ mod test {
 
         let filters = result.unwrap();
         assert_eq!(1, filters.len(), "there should be 1 filter");
-        assert_eq!(FilterType::Entry("what".to_string()), filters[0], "first filter type should be current");
+        assert_eq!(
+            FilterType::Entry("what".to_string()),
+            filters[0],
+            "first filter type should be current"
+        );
     }
 
     #[test]

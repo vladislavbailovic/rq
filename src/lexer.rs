@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::error::*;
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub enum Token {
     OpenBracket,
     CloseBracket,
@@ -14,16 +14,16 @@ pub enum Token {
 }
 
 #[derive(Debug)]
-pub struct Lexer<Chars: Iterator<Item=char>> {
+pub struct Lexer<Chars: Iterator<Item = char>> {
     source: Peekable<Chars>,
-    next_token: Option<Token>
+    next_token: Option<Token>,
 }
 
-impl<Chars: Iterator<Item=char>> Lexer<Chars> {
+impl<Chars: Iterator<Item = char>> Lexer<Chars> {
     fn create(chars: Chars) -> Self {
         Self {
             source: chars.peekable(),
-            next_token: None
+            next_token: None,
         }
     }
 
@@ -83,7 +83,6 @@ impl<Chars: Iterator<Item=char>> Lexer<Chars> {
                         Err(Error::LexError("Expected closing quote".to_string()))
                     }
                     _ => {
-
                         // Number
                         if self.is_num(c) {
                             let mut word = Vec::new();
@@ -108,16 +107,14 @@ impl<Chars: Iterator<Item=char>> Lexer<Chars> {
                                     word.push(cis);
                                     self.source.next();
                                 } else {
-                                    break
+                                    break;
                                 }
                             }
                             return Ok(Some(Token::Word(word.iter().collect())));
                         }
 
                         if !c.is_whitespace() {
-                            return Err(Error::LexError(
-                                format!("Unexpected char: {}", c)
-                            ));
+                            return Err(Error::LexError(format!("Unexpected char: {}", c)));
                         }
 
                         self.next()
@@ -125,7 +122,7 @@ impl<Chars: Iterator<Item=char>> Lexer<Chars> {
                 }
             }
 
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 }

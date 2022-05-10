@@ -17,5 +17,3 @@ impl From<json::Error> for Error {
         return Error::ParseData(format!("Unable to parse data because: {}", e));
     }
 }
-
-
