@@ -1,4 +1,5 @@
 use std::iter::Peekable;
+use std::fmt::{Formatter, Display};
 
 use crate::error::*;
 
@@ -18,6 +19,22 @@ pub enum Token {
 pub struct Lexer<Chars: Iterator<Item = char>> {
     source: Peekable<Chars>,
     next_token: Option<Token>,
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+        let kind = match &self {
+            Token::OpenBracket => "open bracket".to_string(),
+            Token::CloseBracket => "close bracket".to_string(),
+            Token::Dot => "dot".to_string(),
+            Token::Bar => "bar".to_string(),
+            Token::Colon => "colon".to_string(),
+            Token::Number(num) => format!("number {}", num),
+            Token::Word(w) => format!("word {}", w),
+            Token::Str(s) => format!("string {}", s),
+        };
+        write!(f, "{}", kind)
+    }
 }
 
 impl<Chars: Iterator<Item = char>> Lexer<Chars> {

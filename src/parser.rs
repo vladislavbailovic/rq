@@ -32,11 +32,15 @@ impl ExpressionParser {
                 Some(Token::Str(word)) => {
                     return Ok(FilterType::Entry(word.to_string()));
                 }
-                _ => {
+                Some(t) => {
                     return Err(Error::Parser(format!(
-                        "expected number, word or close bracket, got {:?}",
-                        old
+                        "expected number, word or close bracket, got {}", t
                     )));
+                }
+                _ => {
+                    return Err(Error::Parser(
+                        "expected number, word or close bracket, got nothing".to_string()
+                    ));
                 }
             }
         } else if let Some(Token::Colon) = &self.token {
@@ -83,11 +87,14 @@ impl ExpressionParser {
             } else {
                 return Err(Error::Parser("unable to parse range".to_string()));
             }
-        } else {
+        } else if let Some(t) = &self.token {
             return Err(Error::Parser(format!(
-                "expected close bracket or colon, got {:?}",
-                &self.token
+                "expected close bracket or colon, got {}", t
             )));
+        } else {
+            return Err(Error::Parser(
+                "expected close bracket or colon, got nothing".to_string()
+            ));
         }
     }
 
