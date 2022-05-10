@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum Error {
     ParseData(String),
+    LexError(String),
     ParseExpression(String),
     FilterError,
 }

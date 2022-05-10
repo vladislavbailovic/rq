@@ -7,36 +7,35 @@ use filter::*;
 mod lexer;
 use lexer::*;
 
-use std::iter::Peekable;
-
 struct ExpressionParser {
-    lex: Peekable<Lexer<std::vec::IntoIter<char>>>,
+    lex: Lexer<std::vec::IntoIter<char>>,
     token: Option<Token>
 }
 
 impl ExpressionParser {
     pub fn new(source: &str) -> Self {
-        let lex = Lexer::new(source).peekable();
+        let lex = Lexer::new(source);
         Self{ lex, token: None }
     }
 
-    fn next(&mut self) {
-        self.token = self.lex.next();
+    fn next(&mut self) -> Result<(), Error> {
+        self.token = self.lex.next()?;
+        Ok(())
     }
 
     pub fn parse(&mut self) -> Result<Vec<FilterType>, Error> {
         let mut sequence= Vec::new();
 
-        self.next();
+        self.next()?;
         while self.token.is_some() {
             match &self.token {
                 Some(Token::Bar) => {}
                 Some(Token::Dot) => {
-                    if let Some(t) = self.lex.peek() {
+                    if let Some(t) = self.lex.peek()? {
                         match t {
                             Token::Word(word) => {
                                 sequence.push(FilterType::Entry(word.to_string()));
-                                self.lex.next();
+                                self.lex.next()?;
                             }
                             _ => {
                                 sequence.push(FilterType::Current);
@@ -45,12 +44,12 @@ impl ExpressionParser {
                     }
                 }
                 Some(Token::OpenBracket) => {
-                    self.token = self.lex.next();
+                    self.token = self.lex.next()?;
                     if let Some(Token::CloseBracket) = &self.token {
                         sequence.push(FilterType::Array);
                     } else {
                         let old = self.token.clone();
-                        self.next();
+                        self.next()?;
                         if let Some(Token::CloseBracket) = &self.token {
                             match old {
                                 Some(Token::Number(num)) => {
@@ -80,7 +79,7 @@ impl ExpressionParser {
                     return Err(Error::ParseExpression(format!("unexpected token: {:?}", self.token.as_ref().unwrap())));
                 }
             }
-            self.next();
+            self.next()?;
         }
 
         Ok(sequence)

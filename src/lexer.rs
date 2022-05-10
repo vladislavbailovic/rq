@@ -1,5 +1,7 @@
 use std::iter::Peekable;
 
+use crate::error::*;
+
 #[derive(Debug,Clone)]
 pub enum Token {
     OpenBracket,
@@ -9,18 +11,19 @@ pub enum Token {
     Str(String),
     Dot,
     Bar,
-    Any(char),
 }
 
 #[derive(Debug)]
 pub struct Lexer<Chars: Iterator<Item=char>> {
     source: Peekable<Chars>,
+    next_token: Option<Token>
 }
 
 impl<Chars: Iterator<Item=char>> Lexer<Chars> {
     fn create(chars: Chars) -> Self {
         Self {
             source: chars.peekable(),
+            next_token: None
         }
     }
 
@@ -40,28 +43,44 @@ impl<Chars: Iterator<Item=char>> Lexer<Chars> {
         return self.is_num(c) || self.is_alpha(c);
     }
 
-}
+    pub fn next(&mut self) -> Result<Option<Token>, Error> {
+        let mut next = self.next_token.clone();
+        if next.is_none() {
+            next = self.peek()?;
+            if next.is_none() {
+                return Ok(None);
+            }
+        }
+        self.next_token = None;
+        self.peek()?;
+        Ok(next)
+    }
 
-impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
-    type Item = Token;
+    pub fn peek(&mut self) -> Result<Option<Token>, Error> {
+        if self.next_token.is_some() {
+            return Ok(self.next_token.clone());
+        }
+        self.next_token = self.get_next()?;
+        Ok(self.next_token.clone())
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
+    pub fn get_next(&mut self) -> Result<Option<Token>, Error> {
         match self.source.next() {
             Some(c) => {
                 match c {
-                    '.' => Some(Token::Dot),
-                    '|' => Some(Token::Bar),
-                    '[' => Some(Token::OpenBracket),
-                    ']' => Some(Token::CloseBracket),
+                    '.' => Ok(Some(Token::Dot)),
+                    '|' => Ok(Some(Token::Bar)),
+                    '[' => Ok(Some(Token::OpenBracket)),
+                    ']' => Ok(Some(Token::CloseBracket)),
                     '"' => {
                         let mut string = String::new();
                         while let Some(c) = self.source.next() {
                             if '"' == c {
-                                return Some(Token::Str(string));
+                                return Ok(Some(Token::Str(string)));
                             }
                             string.push(c);
                         }
-                        Some(Token::Any(c))
+                        Err(Error::LexError("Expected closing quote".to_string()))
                     }
                     _ => {
 
@@ -77,7 +96,7 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
                                     break;
                                 }
                             }
-                            return Some(Token::Number(word.iter().collect()));
+                            return Ok(Some(Token::Number(word.iter().collect())));
                         }
 
                         // Word
@@ -92,11 +111,13 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
                                     break
                                 }
                             }
-                            return Some(Token::Word(word.iter().collect()));
+                            return Ok(Some(Token::Word(word.iter().collect())));
                         }
 
                         if !c.is_whitespace() {
-                            return Some(Token::Any(c));
+                            return Err(Error::LexError(
+                                format!("Unexpected char: {}", c)
+                            ));
                         }
 
                         self.next()
@@ -104,7 +125,7 @@ impl<Chars: Iterator<Item=char>> Iterator for Lexer<Chars> {
                 }
             }
 
-            None => None
+            None => Ok(None)
         }
     }
 }
