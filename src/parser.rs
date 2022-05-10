@@ -18,6 +18,17 @@ impl ExpressionParser {
         Ok(())
     }
 
+    fn new_range(start: usize, end: usize) -> Result<FilterType, Error> {
+        return if (end > 0 && start >= end) || (start == end) {
+            Err(Error::Parser(format!(
+                "invalid range: start ({}) has to be less than end ({})",
+                start, end
+            )))
+        } else {
+            Ok(FilterType::Range(start, end))
+        };
+    }
+
     fn parse_bracketed_expression(&mut self) -> Result<FilterType, Error> {
         #[allow(unused_assignments)]
         let mut start: usize = 0;
@@ -34,12 +45,13 @@ impl ExpressionParser {
                 }
                 Some(t) => {
                     return Err(Error::Parser(format!(
-                        "expected number, word or close bracket, got {}", t
+                        "expected number, word or close bracket, got {}",
+                        t
                     )));
                 }
                 _ => {
                     return Err(Error::Parser(
-                        "expected number, word or close bracket, got nothing".to_string()
+                        "expected number, word or close bracket, got nothing".to_string(),
                     ));
                 }
             }
@@ -55,13 +67,13 @@ impl ExpressionParser {
             self.next()?;
             if let Some(Token::CloseBracket) = &self.token {
                 // End size omitted
-                return Ok(FilterType::Range(start, end));
+                return ExpressionParser::new_range(start, end);
             } else if let Some(Token::Number(num)) = &self.token {
                 end = num.parse::<usize>().unwrap();
                 self.next()?;
                 if let Some(Token::CloseBracket) = &self.token {
                     // Both start and end sizes given
-                    return Ok(FilterType::Range(start, end));
+                    return ExpressionParser::new_range(start, end);
                 } else {
                     return Err(Error::Parser(
                         "expected close bracket after range".to_string(),
@@ -78,7 +90,7 @@ impl ExpressionParser {
                 end = num.parse::<usize>().unwrap();
                 self.next()?;
                 if let Some(Token::CloseBracket) = &self.token {
-                    return Ok(FilterType::Range(start, end));
+                    return ExpressionParser::new_range(start, end);
                 } else {
                     return Err(Error::Parser(
                         "expected close bracket after range".to_string(),
@@ -89,11 +101,12 @@ impl ExpressionParser {
             }
         } else if let Some(t) = &self.token {
             return Err(Error::Parser(format!(
-                "expected close bracket or colon, got {}", t
+                "expected close bracket or colon, got {}",
+                t
             )));
         } else {
             return Err(Error::Parser(
-                "expected close bracket or colon, got nothing".to_string()
+                "expected close bracket or colon, got nothing".to_string(),
             ));
         }
     }

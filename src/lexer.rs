@@ -1,5 +1,5 @@
+use std::fmt::{Display, Formatter};
 use std::iter::Peekable;
-use std::fmt::{Formatter, Display};
 
 use crate::error::*;
 
