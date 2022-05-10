@@ -133,3 +133,89 @@ impl Lexer<std::vec::IntoIter<char>> {
         Self::create(chr)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn recognizes_chars_alpha() {
+        let lex = Lexer::new("");
+        assert!(lex.is_alpha('t'), "t is alpha");
+        assert!(!lex.is_alpha('1'), "1 is not alpha");
+        assert!(!lex.is_alpha('#'), "# is not alpha");
+    }
+
+    #[test]
+    fn recognizes_chars_num() {
+        let lex = Lexer::new("");
+        assert!(!lex.is_num('t'), "t is not num");
+        assert!(lex.is_num('1'), "1 is num");
+        assert!(!lex.is_num('#'), "# is not num");
+    }
+
+    #[test]
+    fn recognizes_chars_alnum() {
+        let lex = Lexer::new("");
+        assert!(lex.is_alnum('t'), "t is alnum");
+        assert!(lex.is_alnum('1'), "1 is alnum");
+        assert!(!lex.is_alnum('#'), "# is not alnum");
+    }
+
+    #[test]
+    fn lexes_words() {
+        let mut lex = Lexer::new("two words");
+        let r1 = lex.next().unwrap();
+        if let Some(Token::Word(w)) = r1 {
+            assert_eq!(w, "two");
+        } else {
+            assert!(false, "expected word token");
+        }
+
+        let r2 = lex.next().unwrap();
+        if let Some(Token::Word(w)) = r2 {
+            assert_eq!(w, "words");
+        } else {
+            assert!(false, "expected word token");
+        }
+
+        let r3 = lex.next().unwrap();
+        assert!(r3.is_none(), "expected end of input");
+    }
+
+    #[test]
+    fn lexes_strings() {
+        let mut lex = Lexer::new("\"whatever the hell this is\"");
+
+        let r1 = lex.next().unwrap();
+        if let Some(Token::Str(s)) = r1 {
+            assert_eq!(s, "whatever the hell this is");
+        } else {
+            assert!(false, "expected string token");
+        }
+
+        let r2 = lex.next().unwrap();
+        assert!(r2.is_none(), "expected end of input");
+    }
+
+    #[test]
+    fn lexes_numbers() {
+        let mut lex = Lexer::new("1312 161");
+        let r1 = lex.next().unwrap();
+        if let Some(Token::Number(w)) = r1 {
+            assert_eq!(w, "1312");
+        } else {
+            assert!(false, "expected number token");
+        }
+
+        let r2 = lex.next().unwrap();
+        if let Some(Token::Number(w)) = r2 {
+            assert_eq!(w, "161");
+        } else {
+            assert!(false, "expected number token");
+        }
+
+        let r3 = lex.next().unwrap();
+        assert!(r3.is_none(), "expected end of input");
+    }
+}

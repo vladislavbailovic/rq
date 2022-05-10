@@ -66,9 +66,7 @@ impl ExpressionParser {
                                 }
                             }
                         } else {
-                            return Err(Error::Parser(
-                                "expected close bracket".to_string(),
-                            ));
+                            return Err(Error::Parser("expected close bracket".to_string()));
                         }
                     }
                 }
@@ -100,7 +98,7 @@ fn main() -> Result<(), Error> {
     let data = json::parse(&contents)?;
 
     let mut filter = Filter::new(filters);
-    println!("{:?}", filter.apply(data));
+    println!("{:?}", filter.apply(data)?);
     Ok(())
 }
 
