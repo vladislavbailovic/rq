@@ -7,6 +7,7 @@ pub enum FilterType {
     Keys,
     Member(usize),
     Entry(String),
+    Range(usize, usize),
 }
 
 pub struct Filter {
@@ -40,6 +41,21 @@ impl Filter {
             FilterType::Array => {
                 if data.is_array() {
                     Some(data)
+                } else {
+                    None
+                }
+            }
+
+            FilterType::Range(start, end) => {
+                if data.is_array() {
+                    let members = data
+                        .members()
+                        .enumerate()
+                        .filter(|&(i, _)| i >= *start && (*end == 0 || (*end > 0 && i < *end)))
+                        .map(|(_, x)| x)
+                        .cloned();
+                    let res: Vec<json::JsonValue> = members.collect();
+                    Some(json::JsonValue::Array(res))
                 } else {
                     None
                 }

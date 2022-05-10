@@ -18,6 +18,79 @@ impl ExpressionParser {
         Ok(())
     }
 
+    fn parse_bracketed_expression(&mut self) -> Result<FilterType, Error> {
+        #[allow(unused_assignments)]
+        let mut start: usize = 0;
+        let mut end: usize = 0;
+        let old = self.token.clone();
+        self.next()?;
+        if let Some(Token::CloseBracket) = &self.token {
+            match old {
+                Some(Token::Number(num)) => {
+                    return Ok(FilterType::Member(num.parse::<usize>().unwrap()));
+                }
+                Some(Token::Str(word)) => {
+                    return Ok(FilterType::Entry(word.to_string()));
+                }
+                _ => {
+                    return Err(Error::Parser(format!(
+                        "expected number, word or close bracket, got {:?}",
+                        old
+                    )));
+                }
+            }
+        } else if let Some(Token::Colon) = &self.token {
+            match old {
+                Some(Token::Number(num)) => {
+                    start = num.parse::<usize>().unwrap();
+                }
+                _ => {
+                    return Err(Error::Parser("expected number for range start".to_string()));
+                }
+            }
+            self.next()?;
+            if let Some(Token::CloseBracket) = &self.token {
+                // End size omitted
+                return Ok(FilterType::Range(start, end));
+            } else if let Some(Token::Number(num)) = &self.token {
+                end = num.parse::<usize>().unwrap();
+                self.next()?;
+                if let Some(Token::CloseBracket) = &self.token {
+                    // Both start and end sizes given
+                    return Ok(FilterType::Range(start, end));
+                } else {
+                    return Err(Error::Parser(
+                        "expected close bracket after range".to_string(),
+                    ));
+                }
+            } else {
+                return Err(Error::Parser(
+                    "expected range end or close bracket".to_string(),
+                ));
+            }
+        } else if let Some(Token::Number(num)) = &self.token {
+            if let Some(Token::Colon) = old {
+                // No start range
+                end = num.parse::<usize>().unwrap();
+                self.next()?;
+                if let Some(Token::CloseBracket) = &self.token {
+                    return Ok(FilterType::Range(start, end));
+                } else {
+                    return Err(Error::Parser(
+                        "expected close bracket after range".to_string(),
+                    ));
+                }
+            } else {
+                return Err(Error::Parser("unable to parse range".to_string()));
+            }
+        } else {
+            return Err(Error::Parser(format!(
+                "expected close bracket or colon, got {:?}",
+                &self.token
+            )));
+        }
+    }
+
     pub fn parse(&mut self) -> Result<Vec<FilterType>, Error> {
         let mut sequence = Vec::new();
 
@@ -43,26 +116,7 @@ impl ExpressionParser {
                     if let Some(Token::CloseBracket) = &self.token {
                         sequence.push(FilterType::Array);
                     } else {
-                        let old = self.token.clone();
-                        self.next()?;
-                        if let Some(Token::CloseBracket) = &self.token {
-                            match old {
-                                Some(Token::Number(num)) => {
-                                    sequence
-                                        .push(FilterType::Member(num.parse::<usize>().unwrap()));
-                                }
-                                Some(Token::Str(word)) => {
-                                    sequence.push(FilterType::Entry(word.to_string()));
-                                }
-                                _ => {
-                                    return Err(Error::Parser(
-                                        "expected number, word or close bracket".to_string(),
-                                    ));
-                                }
-                            }
-                        } else {
-                            return Err(Error::Parser("expected close bracket".to_string()));
-                        }
+                        sequence.push(self.parse_bracketed_expression()?);
                     }
                 }
                 Some(Token::Word(word)) => match word.as_str() {
@@ -143,6 +197,62 @@ mod test {
         let result = parser.parse();
 
         assert!(result.is_err(), "should not be a success");
+    }
+
+    #[test]
+    fn parses_full_ranges() {
+        let mut parser = ExpressionParser::new("[1:61]");
+        let result = parser.parse();
+
+        assert!(result.is_ok(), "should not be an error");
+
+        let filters = result.unwrap();
+        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(
+            FilterType::Range(1, 61),
+            filters[0],
+            "full range fully recognized"
+        );
+    }
+
+    #[test]
+    fn parses_no_end_ranges() {
+        let mut parser = ExpressionParser::new("[61:]");
+        let result = parser.parse();
+
+        assert!(result.is_ok(), "should not be an error");
+
+        let filters = result.unwrap();
+        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(
+            FilterType::Range(61, 0),
+            filters[0],
+            "no end range fully recognized"
+        );
+    }
+
+    #[test]
+    fn parses_no_start_ranges() {
+        let mut parser = ExpressionParser::new("[:61]");
+        let result = parser.parse();
+
+        assert!(result.is_ok(), "should not be an error");
+
+        let filters = result.unwrap();
+        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(
+            FilterType::Range(0, 61),
+            filters[0],
+            "no start range fully recognized"
+        );
+    }
+
+    #[test]
+    fn errors_out_on_open_ranges() {
+        let mut parser = ExpressionParser::new("[:]");
+        let result = parser.parse();
+
+        assert!(result.is_err(), "should not be an error");
     }
 }
 
