@@ -2,7 +2,7 @@ use std::iter::Peekable;
 
 use crate::error::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     OpenBracket,
     CloseBracket,
@@ -11,6 +11,7 @@ pub enum Token {
     Str(String),
     Dot,
     Bar,
+    Colon,
 }
 
 #[derive(Debug)]
@@ -70,6 +71,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                 match c {
                     '.' => Ok(Some(Token::Dot)),
                     '|' => Ok(Some(Token::Bar)),
+                    ':' => Ok(Some(Token::Colon)),
                     '[' => Ok(Some(Token::OpenBracket)),
                     ']' => Ok(Some(Token::CloseBracket)),
                     '"' => {
@@ -217,5 +219,36 @@ mod test {
 
         let r3 = lex.next().unwrap();
         assert!(r3.is_none(), "expected end of input");
+    }
+
+    #[test]
+    fn lexes_ranges() {
+        let mut lex = Lexer::new("[161:1312]");
+
+        let r1 = lex.next().unwrap();
+        assert_eq!(Some(Token::OpenBracket), r1, "expected open bracket");
+
+        let r2 = lex.next().unwrap();
+        if let Some(Token::Number(w)) = r2 {
+            assert_eq!(w, "161");
+        } else {
+            assert!(false, "expected number token");
+        }
+
+        let r3 = lex.next().unwrap();
+        assert_eq!(Some(Token::Colon), r3, "expected colon");
+
+        let r4 = lex.next().unwrap();
+        if let Some(Token::Number(w)) = r4 {
+            assert_eq!(w, "1312");
+        } else {
+            assert!(false, "expected number token");
+        }
+
+        let r5 = lex.next().unwrap();
+        assert_eq!(Some(Token::CloseBracket), r5, "expected close bracket");
+
+        let r6 = lex.next().unwrap();
+        assert!(r6.is_none(), "expected end of input");
     }
 }
