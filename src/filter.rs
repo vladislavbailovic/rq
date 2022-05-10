@@ -26,7 +26,7 @@ impl Filter {
                 data = new_data.clone();
                 self.current += 1;
             } else {
-                return Err(Error::FilterError);
+                return Err(Error::Filter);
             }
         }
         Ok(data)

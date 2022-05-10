@@ -80,7 +80,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                             }
                             string.push(c);
                         }
-                        Err(Error::LexError("Expected closing quote".to_string()))
+                        Err(Error::Lexer("Expected closing quote".to_string()))
                     }
                     _ => {
                         // Number
@@ -114,7 +114,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                         }
 
                         if !c.is_whitespace() {
-                            return Err(Error::LexError(format!("Unexpected char: {}", c)));
+                            return Err(Error::Lexer(format!("Unexpected char: {}", c)));
                         }
 
                         self.next()

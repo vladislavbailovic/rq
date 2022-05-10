@@ -60,13 +60,13 @@ impl ExpressionParser {
                                     sequence.push(FilterType::Entry(word.to_string()));
                                 }
                                 _ => {
-                                    return Err(Error::ParseExpression(
+                                    return Err(Error::Parser(
                                         "expected number, word or close bracket".to_string(),
                                     ));
                                 }
                             }
                         } else {
-                            return Err(Error::ParseExpression(
+                            return Err(Error::Parser(
                                 "expected close bracket".to_string(),
                             ));
                         }
@@ -74,10 +74,10 @@ impl ExpressionParser {
                 }
                 Some(Token::Word(word)) => match word.as_str() {
                     "keys" => sequence.push(FilterType::Keys),
-                    _ => return Err(Error::ParseExpression(format!("unknown keyword: {}", word))),
+                    _ => return Err(Error::Parser(format!("unknown keyword: {}", word))),
                 },
                 _ => {
-                    return Err(Error::ParseExpression(format!(
+                    return Err(Error::Parser(format!(
                         "unexpected token: {:?}",
                         self.token.as_ref().unwrap()
                     )));
