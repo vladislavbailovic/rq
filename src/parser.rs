@@ -146,7 +146,6 @@ mod test {
     }
 }
 
-
 // fn main() -> Result<(), Error> {
 //     let mut parser = ExpressionParser::new(".[0]|.name");
 //     let filters = parser.parse()?;
