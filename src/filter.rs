@@ -1,5 +1,5 @@
-use crate::error::*;
 use crate::dataset::*;
+use crate::error::*;
 
 #[derive(Debug, PartialEq)]
 pub enum FilterType {
@@ -51,13 +51,9 @@ impl Filter {
                 if let Data::Array(arr) = data {
                     let mut list: Vec<Data> = Vec::new();
                     let mut idx = 0;
-                    let end_corr = if *end > 0 {
-                        *end
-                    } else {
-                        arr.len()
-                    };
+                    let end_corr = if *end > 0 { *end } else { arr.len() };
                     while idx < arr.len() {
-                        if idx <= *start && idx < end_corr {
+                        if idx >= *start && idx < end_corr {
                             list.push(arr[idx].clone());
                         }
                         idx += 1;
@@ -112,8 +108,11 @@ impl Filter {
                 } else if let Data::Array(arr) = data {
                     let mut new_data: Vec<Data> = Vec::new();
                     for val in arr {
-                        // TODO: if val has key...
-                        new_data.push(val.clone());
+                        if let Data::Hash(obj) = val {
+                            if obj.contains_key(name) {
+                                new_data.push(obj.get(name).unwrap().clone());
+                            }
+                        }
                     }
                     Some(Data::Array(new_data))
                 } else {
