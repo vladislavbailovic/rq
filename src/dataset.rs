@@ -28,7 +28,8 @@ pub fn load_file(filename: &str) -> Result<Data, Error> {
 fn load_yaml(filename: &str) -> Result<Data, Error> {
     let contents = std::fs::read_to_string(filename)?;
     let raw = yaml_rust::YamlLoader::load_from_str(&contents)?;
-    return if raw.len() == 1 {
+
+    if raw.len() == 1 {
         parse_yaml(raw[0].clone())
     } else {
         let mut arr: Vec<Data> = Vec::new();
@@ -36,7 +37,7 @@ fn load_yaml(filename: &str) -> Result<Data, Error> {
             arr.push(parse_yaml(item)?);
         }
         Ok(Data::Array(arr))
-    };
+    }
 }
 
 fn parse_yaml(raw: yaml_rust::yaml::Yaml) -> Result<Data, Error> {
@@ -85,15 +86,15 @@ fn parse_json(raw: json::JsonValue) -> Result<Data, Error> {
         Ok(Data::Hash(hash))
     } else if raw.is_number() {
         let num = raw.as_i64();
-        if num.is_none() {
+        if let Some(n) = num {
+            Ok(Data::Integer(n))
+        } else {
             let num = raw.as_f32();
-            if num.is_some() {
-                Ok(Data::Real(num.unwrap() as f32))
+            if let Some(n) = num {
+                Ok(Data::Real(n as f32))
             } else {
                 Err(Error::Dataset(format!("invalid number: {:?}", num)))
             }
-        } else {
-            Ok(Data::Integer(num.unwrap()))
         }
     } else if raw.is_boolean() {
         Ok(Data::Boolean(raw.as_bool().unwrap()))

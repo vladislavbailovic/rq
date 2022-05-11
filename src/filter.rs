@@ -41,7 +41,7 @@ impl Filter {
 
             FilterType::Array => {
                 if let Data::Array(arr) = data {
-                    Some(Data::Array(arr.clone()))
+                    Some(Data::Array(arr))
                 } else {
                     None
                 }
