@@ -61,23 +61,6 @@ impl Filter {
                 }
             }
 
-            // FilterType::Next => {
-            //     if data.is_array() {
-            //         return if let Some(new_data) = data.members().next() {
-            //             Some(new_data.clone())
-            //         } else {
-            //             None
-            //         };
-            //     }
-            //     if data.is_object() {
-            //         return if let Some(new_data) = data.entries().next() {
-            //             Some(new_data.1.clone())
-            //         } else {
-            //             None
-            //         };
-            //     }
-            //     None
-            // }
             FilterType::Keys => {
                 if data.is_array() {
                     let keys: Vec<usize> = (0..data.members().len()).collect();

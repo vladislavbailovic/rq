@@ -52,7 +52,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
 
     fn is_alpha(&self, c: char) -> bool {
         let c8 = c as u8;
-        (65..=90).contains(&c8) // Uppercase
+        (65..=90).contains(&c8)         // Uppercase
             || (97..=122).contains(&c8) // Lowercase
             || c8 == 95 // Underscore
     }
