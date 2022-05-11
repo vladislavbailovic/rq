@@ -1,7 +1,7 @@
 use crate::error::*;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum Data {
     Hash(HashMap<String, Data>),
     Array(Vec<Data>),
@@ -14,13 +14,13 @@ pub enum Data {
 pub fn load_file(filename: &str) -> Result<Data, Error> {
     let fpath = std::path::Path::new(filename);
     match fpath.extension() {
-        None => Err(Error::Datasource("missing file extension".to_string())),
+        None => Err(Error::Dataset("missing file extension".to_string())),
         Some(os_str) => match os_str.to_str() {
-            None => Err(Error::Datasource("missing file extension".to_string())),
+            None => Err(Error::Dataset("missing file extension".to_string())),
             Some("yaml") => load_yaml(filename),
             Some("yml") => load_yaml(filename),
             Some("json") => load_json(filename),
-            Some(ext) => Err(Error::Datasource(format!("unknown file extension: {}", ext))),
+            Some(ext) => Err(Error::Dataset(format!("unknown file extension: {}", ext))),
         }
     }
 }
@@ -90,7 +90,7 @@ fn parse_json(raw: json::JsonValue) -> Result<Data, Error> {
             if num.is_some() {
                 Ok(Data::Real(num.unwrap() as f32))
             } else {
-                Err(Error::Datasource(format!("invalid number: {:?}", num)))
+                Err(Error::Dataset(format!("invalid number: {:?}", num)))
             }
         } else {
             Ok(Data::Integer(num.unwrap()))
@@ -100,6 +100,6 @@ fn parse_json(raw: json::JsonValue) -> Result<Data, Error> {
     } else if raw.is_string() {
         Ok(Data::String(raw.as_str().unwrap().to_string()))
     } else {
-        Err(Error::Datasource("JSON is not an object or an array".to_string()))
+        Err(Error::Dataset("JSON is not an object or an array".to_string()))
     }
 }
