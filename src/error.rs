@@ -17,3 +17,9 @@ impl From<json::Error> for Error {
         return Error::Datasource(format!("Unable to parse data because: {}", e));
     }
 }
+
+impl From<yaml_rust::ScanError> for Error {
+    fn from(e: yaml_rust::ScanError) -> Self {
+        return Error::Datasource(format!("Unable to parse data because: {}", e));
+    }
+}
