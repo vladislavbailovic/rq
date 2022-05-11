@@ -19,7 +19,7 @@ impl ExpressionParser {
     }
 
     fn new_range(start: usize, end: usize) -> Result<FilterType, Error> {
-        return if (end > 0 && start >= end) || (start == end) {
+        return if (end > 0 && start >= end) || (start > 0 && start == end) {
             Err(Error::Parser(format!(
                 "invalid range: start ({}) has to be less than end ({})",
                 start, end
@@ -30,85 +30,79 @@ impl ExpressionParser {
     }
 
     fn parse_bracketed_expression(&mut self) -> Result<FilterType, Error> {
-        #[allow(unused_assignments)]
-        let mut start: usize = 0;
-        let mut end: usize = 0;
-        let old = self.token.clone();
-        self.next()?;
-        if let Some(Token::CloseBracket) = &self.token {
-            match old {
-                Some(Token::Number(num)) => {
-                    return Ok(FilterType::Member(num.parse::<usize>().unwrap()));
-                }
-                Some(Token::Str(word)) => {
-                    return Ok(FilterType::Entry(word.to_string()));
-                }
-                Some(t) => {
-                    return Err(Error::Parser(format!(
-                        "expected number, word or close bracket, got {}",
-                        t
-                    )));
-                }
-                _ => {
-                    return Err(Error::Parser(
-                        "expected number, word or close bracket, got nothing".to_string(),
-                    ));
-                }
-            }
-        } else if let Some(Token::Colon) = &self.token {
-            match old {
-                Some(Token::Number(num)) => {
-                    start = num.parse::<usize>().unwrap();
-                }
-                _ => {
-                    return Err(Error::Parser("expected number for range start".to_string()));
-                }
-            }
+        let mut token_set = Vec::new();
+        let mut is_closed = false;
+        while self.token.is_some() {
             self.next()?;
             if let Some(Token::CloseBracket) = &self.token {
-                // End size omitted
-                return ExpressionParser::new_range(start, end);
-            } else if let Some(Token::Number(num)) = &self.token {
-                end = num.parse::<usize>().unwrap();
-                self.next()?;
-                if let Some(Token::CloseBracket) = &self.token {
-                    // Both start and end sizes given
-                    return ExpressionParser::new_range(start, end);
-                } else {
-                    return Err(Error::Parser(
-                        "expected close bracket after range".to_string(),
-                    ));
-                }
-            } else {
-                return Err(Error::Parser(
-                    "expected range end or close bracket".to_string(),
-                ));
+                is_closed = true;
+                break;
             }
-        } else if let Some(Token::Number(num)) = &self.token {
-            if let Some(Token::Colon) = old {
-                // No start range
-                end = num.parse::<usize>().unwrap();
-                self.next()?;
-                if let Some(Token::CloseBracket) = &self.token {
-                    return ExpressionParser::new_range(start, end);
-                } else {
-                    return Err(Error::Parser(
-                        "expected close bracket after range".to_string(),
-                    ));
-                }
-            } else {
-                return Err(Error::Parser("unable to parse range".to_string()));
+            token_set.push(self.token.clone().unwrap());
+        }
+        if !is_closed {
+            return Err(Error::Parser("bracketed expression not closed".to_string()));
+        }
+        return if token_set.len() == 0 {
+            // Empty array expression: []
+            Ok(FilterType::Array)
+        } else if token_set.contains(&Token::Colon) {
+            // Range expression: [(n)?:(m)?]
+            ExpressionParser::parse_range_expression(token_set)
+        } else if token_set.len() == 1 {
+            if let Token::Str(w) = &token_set[0] {
+                // Object property: ["key"]
+                return Ok(FilterType::Entry(w.to_string()));
             }
-        } else if let Some(t) = &self.token {
+            if let Token::Number(n) = &token_set[0] {
+                // Array member: [n]
+                return Ok(FilterType::Member(n.parse::<usize>().unwrap()));
+            }
             return Err(Error::Parser(format!(
-                "expected close bracket or colon, got {}",
-                t
+                "expected number, string or range in bracketed expression, got {}",
+                &token_set[0]
+            )));
+        } else {
+            Err(Error::Parser("invalid bracket expression".to_string()))
+        };
+    }
+
+    fn parse_range_expression(token_set: Vec<Token>) -> Result<FilterType, Error> {
+        let mut start: usize = 0;
+        let mut end: usize = 0;
+        if token_set.len() == 1 {
+            // Empty range expression: [:]
+            return ExpressionParser::new_range(start, end);
+        }
+
+        let mut pos = 0;
+        if let Token::Number(num) = &token_set[pos] {
+            start = num.parse::<usize>().unwrap();
+            pos += 1;
+        }
+        if let Token::Colon = &token_set[pos] {
+            pos += 1;
+        } else if pos == 0 {
+            return Err(Error::Parser(format!(
+                "expected colon or start range, got {}",
+                &token_set[pos]
             )));
         } else {
             return Err(Error::Parser(
-                "expected close bracket or colon, got nothing".to_string(),
+                "invalid range, expected colon separator".to_string(),
             ));
         }
+        if pos < token_set.len() {
+            if let Token::Number(num) = &token_set[pos] {
+                end = num.parse::<usize>().unwrap();
+            } else {
+                return Err(Error::Parser(format!(
+                    "expected end range, got {}",
+                    &token_set[pos]
+                )));
+            }
+        }
+        ExpressionParser::new_range(start, end)
     }
 
     pub fn parse(&mut self) -> Result<Vec<FilterType>, Error> {
@@ -132,12 +126,7 @@ impl ExpressionParser {
                     }
                 }
                 Some(Token::OpenBracket) => {
-                    self.token = self.lex.next()?;
-                    if let Some(Token::CloseBracket) = &self.token {
-                        sequence.push(FilterType::Array);
-                    } else {
-                        sequence.push(self.parse_bracketed_expression()?);
-                    }
+                    sequence.push(self.parse_bracketed_expression()?);
                 }
                 Some(Token::Word(word)) => match word.as_str() {
                     "keys" => sequence.push(FilterType::Keys),
@@ -145,7 +134,7 @@ impl ExpressionParser {
                 },
                 _ => {
                     return Err(Error::Parser(format!(
-                        "unexpected token: {:?}",
+                        "unexpected token: {}",
                         self.token.as_ref().unwrap()
                     )));
                 }
@@ -268,11 +257,19 @@ mod test {
     }
 
     #[test]
-    fn errors_out_on_open_ranges() {
+    fn parses_open_ranges() {
         let mut parser = ExpressionParser::new("[:]");
         let result = parser.parse();
 
-        assert!(result.is_err(), "should not be an error");
+        assert!(result.is_ok(), "should not be an error");
+
+        let filters = result.unwrap();
+        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(
+            FilterType::Range(0, 0),
+            filters[0],
+            "open range fully recognized"
+        );
     }
 }
 
