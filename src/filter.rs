@@ -58,33 +58,32 @@ impl Filter {
                         }
                         idx += 1;
                     }
-                    return Some(Data::Array(list));
+                    Some(Data::Array(list))
+                } else {
+                    None
                 }
-
-                None
             }
 
-            FilterType::Keys => {
-                if let Data::Array(arr) = data {
+            FilterType::Keys => match data {
+                Data::Array(arr) => {
                     let mut list: Vec<Data> = Vec::new();
                     let mut idx = 0;
                     while idx < arr.len() {
                         list.push(Data::Integer(idx as i64));
                         idx += 1;
                     }
-                    return Some(Data::Array(list));
+                    Some(Data::Array(list))
                 }
-
-                if let Data::Hash(map) = data {
+                Data::Hash(map) => {
                     let mut keys: Vec<Data> = Vec::new();
                     for key in map.keys() {
                         keys.push(Data::String(key.to_string()));
                     }
-                    return Some(Data::Array(keys));
+                    Some(Data::Array(keys))
                 }
 
-                None
-            }
+                _ => None,
+            },
 
             FilterType::Member(idx) => {
                 if let Data::Array(arr) = data {
@@ -98,14 +97,15 @@ impl Filter {
                 }
             }
 
-            FilterType::Entry(name) => {
-                if let Data::Hash(map) = data {
+            FilterType::Entry(name) => match data {
+                Data::Hash(map) => {
                     if map.contains_key(name) {
                         Some(map.get(name).unwrap().clone())
                     } else {
                         None
                     }
-                } else if let Data::Array(arr) = data {
+                }
+                Data::Array(arr) => {
                     let mut new_data: Vec<Data> = Vec::new();
                     for val in arr {
                         if let Data::Hash(obj) = val {
@@ -115,10 +115,9 @@ impl Filter {
                         }
                     }
                     Some(Data::Array(new_data))
-                } else {
-                    None
                 }
-            }
+                _ => None,
+            },
         }
     }
 }
