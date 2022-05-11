@@ -109,6 +109,10 @@ impl Filter {
                     } else {
                         None
                     }
+                } else if data.is_array() {
+                    let new_data: Vec<json::JsonValue> =
+                        data.members().map(|x| x[name].clone()).collect();
+                    return Some(json::JsonValue::from(new_data));
                 } else {
                     None
                 }
