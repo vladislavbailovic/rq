@@ -21,7 +21,7 @@ impl Filter {
     }
 
     pub fn apply(&mut self, original_data: json::JsonValue) -> Result<json::JsonValue, Error> {
-        let mut data = original_data.clone();
+        let mut data = original_data;
         while self.current < self.types.len() {
             if let Some(new_data) = self.apply_current(data) {
                 data = new_data.clone();
@@ -92,11 +92,7 @@ impl Filter {
 
             FilterType::Member(idx) => {
                 if data.is_array() {
-                    if let Some(new_data) = data.members().nth(*idx) {
-                        Some(new_data.clone())
-                    } else {
-                        None
-                    }
+                    data.members().nth(*idx).cloned()
                 } else {
                     None
                 }
@@ -115,7 +111,7 @@ impl Filter {
                         .filter(|x| x.has_key(name))
                         .map(|x| x[name].clone())
                         .collect();
-                    return Some(json::JsonValue::from(new_data));
+                    Some(json::JsonValue::from(new_data))
                 } else {
                     None
                 }

@@ -47,18 +47,18 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
 
     fn is_num(&self, c: char) -> bool {
         let c8 = c as u8;
-        return c8 >= 48 && c8 <= 57;
+        (48..=57).contains(&c8)
     }
 
     fn is_alpha(&self, c: char) -> bool {
         let c8 = c as u8;
-        return (c8 >= 65 && c8 <= 90) // Uppercase
-            || (c8 >= 97 && c8 <= 122) // Lowercase
-            || c8 == 95; // Underscore
+        (65..=90).contains(&c8) // Uppercase
+            || (97..=122).contains(&c8) // Lowercase
+            || c8 == 95 // Underscore
     }
 
     fn is_alnum(&self, c: char) -> bool {
-        return self.is_num(c) || self.is_alpha(c);
+        self.is_num(c) || self.is_alpha(c)
     }
 
     pub fn next(&mut self) -> Result<Option<Token>, Error> {
@@ -93,7 +93,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                     ']' => Ok(Some(Token::CloseBracket)),
                     '"' => {
                         let mut string = String::new();
-                        while let Some(c) = self.source.next() {
+                        for c in self.source.by_ref() {
                             if '"' == c {
                                 return Ok(Some(Token::Str(string)));
                             }
@@ -104,8 +104,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                     _ => {
                         // Number
                         if self.is_num(c) {
-                            let mut word = Vec::new();
-                            word.push(c);
+                            let mut word = vec![c];
                             while let Some(&cis) = self.source.peek() {
                                 if self.is_num(cis) {
                                     word.push(cis);
@@ -119,8 +118,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
 
                         // Word
                         if self.is_alpha(c) {
-                            let mut word = Vec::new();
-                            word.push(c);
+                            let mut word = vec![c];
                             while let Some(&cis) = self.source.peek() {
                                 if self.is_alnum(cis) {
                                     word.push(cis);

@@ -43,7 +43,7 @@ impl ExpressionParser {
         if !is_closed {
             return Err(Error::Parser("bracketed expression not closed".to_string()));
         }
-        return if token_set.len() == 0 {
+        return if token_set.is_empty() {
             // Empty array expression: []
             Ok(FilterType::Array)
         } else if token_set.contains(&Token::Colon) {
