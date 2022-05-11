@@ -65,5 +65,41 @@ fn parse_yaml(raw: yaml_rust::yaml::Yaml) -> Result<Data, Error> {
 }
 
 fn load_json(filename: &str) -> Result<Data, Error> {
-    Err(Error::Datasource("nope".to_string()))
+    let contents = std::fs::read_to_string(filename)?;
+    let raw = json::parse(&contents)?;
+    parse_json(raw)
+}
+
+fn parse_json(raw: json::JsonValue) -> Result<Data, Error> {
+    return if raw.is_array() {
+        let mut arr: Vec<Data> = Vec::new();
+        for item in raw.members() {
+            arr.push(parse_json(item.clone())?);
+        }
+        Ok(Data::Array(arr))
+    } else if raw.is_object() {
+        let mut hash: HashMap<String, Data> = HashMap::new();
+        for (key, value) in raw.entries() {
+            hash.insert(key.to_string(), parse_json(value.clone())?);
+        }
+        Ok(Data::Hash(hash))
+    } else if raw.is_number() {
+        let num = raw.as_i64();
+        if num.is_none() {
+            let num = raw.as_f32();
+            if num.is_some() {
+                Ok(Data::Real(num.unwrap() as f32))
+            } else {
+                Err(Error::Datasource(format!("invalid number: {:?}", num)))
+            }
+        } else {
+            Ok(Data::Integer(num.unwrap()))
+        }
+    } else if raw.is_boolean() {
+        Ok(Data::Boolean(raw.as_bool().unwrap()))
+    } else if raw.is_string() {
+        Ok(Data::String(raw.as_str().unwrap().to_string()))
+    } else {
+        Err(Error::Datasource("JSON is not an object or an array".to_string()))
+    }
 }

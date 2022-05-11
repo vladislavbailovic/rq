@@ -13,7 +13,7 @@ mod dataset;
 use dataset::*;
 
 fn main() -> Result<(), Error> {
-    let filename = "test-data/one.yaml";
+    let filename = "test-data/one.json";
     let data = load_file(filename)?;
 
     println!("DATA IS:\n{:?}\nEND DATA", data);
