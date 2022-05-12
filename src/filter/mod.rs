@@ -8,7 +8,7 @@ mod set;
 pub use set::*;
 
 pub trait Filterable {
-    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>>;
+    fn get_filterables(&self) -> Vec<Box<dyn Filterable>>;
 
     fn apply(&self, original_data: Data) -> Result<Data, Error> {
         let mut data = original_data;
@@ -43,10 +43,10 @@ impl Filter {
 }
 
 impl Filterable for Filter {
-    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>> {
-        let mut map: Vec<Box<&dyn Filterable>> = Vec::new();
+    fn get_filterables(&self) -> Vec<Box<dyn Filterable>> {
+        let mut map: Vec<Box<dyn Filterable>> = Vec::new();
         for set in &self.sets {
-            map.push(Box::new(set));
+            map.push(Box::new(set.clone()));
         }
         map
     }

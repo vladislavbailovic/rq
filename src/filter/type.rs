@@ -11,7 +11,7 @@ pub enum FilterType {
 }
 
 impl Filterable for FilterType {
-    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>> {
+    fn get_filterables(&self) -> Vec<Box<dyn Filterable>> {
         Vec::new()
     }
     fn apply(&self, data: Data) -> Result<Data, Error> {

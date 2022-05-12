@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct FilterSet {
     // TODO: only pub because of parser tests, address this!
     pub types: Vec<FilterType>,
@@ -13,10 +13,10 @@ impl FilterSet {
 }
 
 impl Filterable for FilterSet {
-    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>> {
-        let mut map: Vec<Box<&dyn Filterable>> = Vec::new();
+    fn get_filterables(&self) -> Vec<Box<dyn Filterable>> {
+        let mut map: Vec<Box<dyn Filterable>> = Vec::new();
         for t in &self.types {
-            map.push(Box::new(t));
+            map.push(Box::new(t.clone()));
         }
         map
     }
