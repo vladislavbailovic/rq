@@ -1,6 +1,6 @@
-use crate::dataset::*;
+use super::*;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FilterType {
     Current,
     Array,
@@ -10,10 +10,13 @@ pub enum FilterType {
     Range(usize, usize),
 }
 
-impl FilterType {
-    pub fn apply(&self, data: Data) -> Option<Data> {
+impl Filterable for FilterType {
+    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>> {
+        Vec::new()
+    }
+    fn apply(&self, data: Data) -> Result<Data, Error> {
         match &self {
-            FilterType::Current => Some(data),
+            FilterType::Current => Ok(data),
             FilterType::Array => self.array(data),
             FilterType::Range(start, end) => self.range(data, *start, *end),
             FilterType::Keys => self.keys(data),
@@ -21,16 +24,19 @@ impl FilterType {
             FilterType::Entry(name) => self.entry(data, name.to_string()),
         }
     }
+}
 
-    fn array(&self, data: Data) -> Option<Data> {
+impl FilterType {
+
+    fn array(&self, data: Data) -> Result<Data, Error> {
         if let Data::Array(arr) = data {
-            Some(Data::Array(arr))
+            Ok(Data::Array(arr))
         } else {
-            None
+            Err(Error::Filter)
         }
     }
 
-    fn keys(&self, data: Data) -> Option<Data> {
+    fn keys(&self, data: Data) -> Result<Data, Error> {
         match data {
             Data::Array(arr) => {
                 let mut list: Vec<Data> = Vec::new();
@@ -39,39 +45,39 @@ impl FilterType {
                     list.push(Data::Integer(idx as i64));
                     idx += 1;
                 }
-                Some(Data::Array(list))
+                Ok(Data::Array(list))
             }
             Data::Hash(map) => {
                 let mut keys: Vec<Data> = Vec::new();
                 for key in map.keys() {
                     keys.push(Data::String(key.to_string()));
                 }
-                Some(Data::Array(keys))
+                Ok(Data::Array(keys))
             }
 
-            _ => None,
+            _ => Err(Error::Filter),
         }
     }
 
-    fn member(&self, data: Data, idx: usize) -> Option<Data> {
+    fn member(&self, data: Data, idx: usize) -> Result<Data, Error> {
         if let Data::Array(arr) = data {
             if idx < arr.len() {
-                Some(arr[idx].clone())
+                Ok(arr[idx].clone())
             } else {
-                None
+                Err(Error::Filter)
             }
         } else {
-            None
+            Err(Error::Filter)
         }
     }
 
-    fn entry(&self, data: Data, name: String) -> Option<Data> {
+    fn entry(&self, data: Data, name: String) -> Result<Data, Error> {
         match data {
             Data::Hash(map) => {
                 if map.contains_key(&name) {
-                    Some(map.get(&name).unwrap().clone())
+                    Ok(map.get(&name).unwrap().clone())
                 } else {
-                    None
+                    Err(Error::Filter)
                 }
             }
             Data::Array(arr) => {
@@ -83,13 +89,13 @@ impl FilterType {
                         }
                     }
                 }
-                Some(Data::Array(new_data))
+                Ok(Data::Array(new_data))
             }
-            _ => None,
+            _ => Err(Error::Filter),
         }
     }
 
-    fn range(&self, data: Data, start: usize, end: usize) -> Option<Data> {
+    fn range(&self, data: Data, start: usize, end: usize) -> Result<Data, Error> {
         if let Data::Array(arr) = data {
             let mut list: Vec<Data> = Vec::new();
             let mut idx = 0;
@@ -100,9 +106,9 @@ impl FilterType {
                 }
                 idx += 1;
             }
-            Some(Data::Array(list))
+            Ok(Data::Array(list))
         } else {
-            None
+            Err(Error::Filter)
         }
     }
 }

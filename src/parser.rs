@@ -105,8 +105,8 @@ impl ExpressionParser {
         ExpressionParser::new_range(start, end)
     }
 
-    pub fn parse(&mut self) -> Result<Vec<FilterType>, Error> {
-        let mut sequence = Vec::new();
+    pub fn parse(&mut self) -> Result<Filter, Error> {
+        let mut filter: Filter = Default::default();
 
         self.next()?;
         while self.token.is_some() {
@@ -116,20 +116,20 @@ impl ExpressionParser {
                     if let Some(t) = self.lex.peek()? {
                         match t {
                             Token::Word(word) => {
-                                sequence.push(FilterType::Entry(word.to_string()));
+                                filter.add(FilterType::Entry(word.to_string()));
                                 self.lex.next()?;
                             }
                             _ => {
-                                sequence.push(FilterType::Current);
+                                filter.add(FilterType::Current);
                             }
                         }
                     }
                 }
                 Some(Token::OpenBracket) => {
-                    sequence.push(self.parse_bracketed_expression()?);
+                    filter.add(self.parse_bracketed_expression()?);
                 }
                 Some(Token::Word(word)) => match word.as_str() {
-                    "keys" => sequence.push(FilterType::Keys),
+                    "keys" => filter.add(FilterType::Keys),
                     _ => return Err(Error::Parser(format!("unknown keyword: {}", word))),
                 },
                 _ => {
@@ -142,13 +142,41 @@ impl ExpressionParser {
             self.next()?;
         }
 
-        Ok(sequence)
+        Ok(filter)
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+
+    impl Filter {
+        fn current_set(&self) -> Vec<FilterType> {
+            let mut set: Vec<FilterType> = Vec::new();
+            if self.sets.is_empty() {
+                return set;
+            }
+            let l = self.sets.len();
+            for t in self.sets[l-1].list() {
+                set.push(t);
+            }
+            return set;
+        }
+
+        fn len(&self) -> usize {
+            self.sets.len()
+        }
+    }
+
+    impl FilterSet {
+        pub fn list(&self) -> Vec<FilterType> {
+            let mut map: Vec<FilterType> = Vec::new();
+            for t in &self.types {
+                map.push(t.clone());
+            }
+            map
+        }
+    }
 
     #[test]
     fn parses_keys_expr() {
@@ -158,20 +186,20 @@ mod test {
         assert!(result.is_ok(), "should be a success");
 
         let filters = result.unwrap();
-        assert_eq!(3, filters.len(), "there should be 3 filters");
+        assert_eq!(3, filters.current_set().len(), "there should be 3 filters");
         assert_eq!(
             FilterType::Current,
-            filters[0],
+            filters.current_set()[0],
             "first filter type should be current"
         );
         assert_eq!(
             FilterType::Array,
-            filters[1],
+            filters.current_set()[1],
             "second filter type should be array"
         );
         assert_eq!(
             FilterType::Keys,
-            filters[2],
+            filters.current_set()[2],
             "last filter type should be keys"
         );
     }
@@ -187,7 +215,7 @@ mod test {
         assert_eq!(1, filters.len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Entry("what".to_string()),
-            filters[0],
+            filters.current_set()[0],
             "first filter type should be current"
         );
     }
@@ -219,7 +247,7 @@ mod test {
         assert_eq!(1, filters.len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(1, 61),
-            filters[0],
+            filters.current_set()[0],
             "full range fully recognized"
         );
     }
@@ -235,7 +263,7 @@ mod test {
         assert_eq!(1, filters.len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(61, 0),
-            filters[0],
+            filters.current_set()[0],
             "no end range fully recognized"
         );
     }
@@ -251,7 +279,7 @@ mod test {
         assert_eq!(1, filters.len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(0, 61),
-            filters[0],
+            filters.current_set()[0],
             "no start range fully recognized"
         );
     }
@@ -267,22 +295,8 @@ mod test {
         assert_eq!(1, filters.len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(0, 0),
-            filters[0],
+            filters.current_set()[0],
             "open range fully recognized"
         );
     }
 }
-
-// fn main() -> Result<(), Error> {
-//     let mut parser = ExpressionParser::new(".[0]|.name");
-//     let filters = parser.parse()?;
-//     println!("{:?}", filters);
-
-//     let filename = "test-data/one.json";
-//     let contents = std::fs::read_to_string(filename)?;
-//     let data = json::parse(&contents)?;
-
-//     let mut filter = Filter::new(filters);
-//     println!("{:?}", filter.apply(data)?);
-//     Ok(())
-// }

@@ -55,8 +55,7 @@ fn main() -> Result<(), Error> {
         }
         println!("{:?}", filters);
 
-        let mut filter = Filter::new(filters.unwrap());
-        let result = filter.apply(data.clone());
+        let result = filters.unwrap().apply(data.clone());
         if result.is_err() {
             report_error(result);
             continue;

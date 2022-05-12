@@ -4,45 +4,57 @@ use crate::error::*;
 mod r#type;
 pub use r#type::*;
 
-pub struct Filter {
-    types: Vec<FilterType>,
-    current: usize,
-}
+mod set;
+pub use set::*;
 
-impl Filter {
-    pub fn new(types: Vec<FilterType>) -> Self {
-        Self { types, current: 0 }
-    }
+pub trait Filterable {
 
-    pub fn apply(&mut self, original_data: Data) -> Result<Data, Error> {
+    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>>;
+
+    fn apply(&self, original_data: Data) -> Result<Data, Error> {
         let mut data = original_data;
-        while self.current < self.types.len() {
-            if let Some(new_data) = self.apply_current(data) {
-                data = new_data.clone();
-                self.current += 1;
-            } else {
-                return Err(Error::Filter);
-            }
+        let filterables = self.get_filterables();
+        for filterable in filterables {
+            let new_data = filterable.apply(data)?;
+            data = new_data.clone();
         }
         Ok(data)
     }
+}
 
-    fn apply_current(&self, data: Data) -> Option<Data> {
-        let f = self.current;
-        self.types[f].apply(data)
+#[derive(Debug)]
+pub struct Filter {
+    // TODO: only pub because of parser tests, address this!
+    pub sets: Vec<FilterSet>,
+}
+
+impl Filter {
+    pub fn add_set(&mut self, s: FilterSet) {
+        self.sets.push(s);
+    }
+
+    pub fn add(&mut self, t: FilterType) {
+        if self.sets.is_empty() {
+            let s: FilterSet = Default::default();
+            self.add_set(s);
+        }
+        let l = self.sets.len();
+        self.sets[l-1].add(t);
     }
 }
 
-// fn main() -> Result<(), Error> {
-//     let filename = "test-data/one.json";
-//     let contents = std::fs::read_to_string(filename)?;
-//     let data = json::parse(&contents)?;
-//     let mut filter = Filter::new(vec![
-//         FilterType::Current,
-//         FilterType::Array,
-//         FilterType::Member(0),
-//         FilterType::Entry("name".to_string())
-//     ]);
-//     println!("{:?}", filter.apply(data));
-//     Ok(())
-// }
+impl Default for Filter {
+    fn default() -> Self {
+        Self{ sets: Vec::new() }
+    }
+}
+
+impl Filterable for Filter {
+    fn get_filterables(&self) -> Vec<Box<&dyn Filterable>> {
+        let mut map: Vec<Box<&dyn Filterable>> = Vec::new();
+        for set in &self.sets {
+            map.push(Box::new(set));
+        }
+        map
+    }
+}
