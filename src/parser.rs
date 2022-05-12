@@ -111,7 +111,10 @@ impl ExpressionParser {
         self.next()?;
         while self.token.is_some() {
             match &self.token {
-                Some(Token::Bar) => {}
+                Some(Token::Bar) => {
+                    let s: FilterSet = Default::default();
+                    filter.add_set(s);
+                }
                 Some(Token::Dot) => {
                     if let Some(t) = self.lex.peek()? {
                         match t {
@@ -180,7 +183,7 @@ mod test {
 
     #[test]
     fn parses_keys_expr() {
-        let mut parser = ExpressionParser::new(".[]|keys");
+        let mut parser = ExpressionParser::new(".[]keys");
         let result = parser.parse();
 
         assert!(result.is_ok(), "should be a success");
@@ -212,7 +215,7 @@ mod test {
         assert!(result.is_ok(), "should be a success");
 
         let filters = result.unwrap();
-        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(1, filters.current_set().len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Entry("what".to_string()),
             filters.current_set()[0],
@@ -244,7 +247,7 @@ mod test {
         assert!(result.is_ok(), "should not be an error");
 
         let filters = result.unwrap();
-        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(1, filters.current_set().len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(1, 61),
             filters.current_set()[0],
@@ -260,7 +263,7 @@ mod test {
         assert!(result.is_ok(), "should not be an error");
 
         let filters = result.unwrap();
-        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(1, filters.current_set().len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(61, 0),
             filters.current_set()[0],
@@ -276,7 +279,7 @@ mod test {
         assert!(result.is_ok(), "should not be an error");
 
         let filters = result.unwrap();
-        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(1, filters.current_set().len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(0, 61),
             filters.current_set()[0],
@@ -292,11 +295,21 @@ mod test {
         assert!(result.is_ok(), "should not be an error");
 
         let filters = result.unwrap();
-        assert_eq!(1, filters.len(), "there should be 1 filter");
+        assert_eq!(1, filters.current_set().len(), "there should be 1 filter");
         assert_eq!(
             FilterType::Range(0, 0),
             filters.current_set()[0],
             "open range fully recognized"
         );
+    }
+
+    #[test]
+    fn bar_adds_sets() {
+        let mut parser = ExpressionParser::new("[]|keys");
+        let result = parser.parse();
+        assert!(result.is_ok(), "should not be an error");
+
+        let filters = result.unwrap();
+        assert_eq!(2, filters.len(), "there should be 2 filter sets");
     }
 }
