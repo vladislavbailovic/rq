@@ -1,20 +1,14 @@
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FilterSet {
     // TODO: only pub because of parser tests, address this!
-    pub types: Vec<FilterType>
+    pub types: Vec<FilterType>,
 }
 
 impl FilterSet {
     pub fn add(&mut self, t: FilterType) {
         self.types.push(t);
-    }
-}
-
-impl Default for FilterSet {
-    fn default() -> Self {
-        Self{ types: Vec::new() }
     }
 }
 

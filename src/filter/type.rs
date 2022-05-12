@@ -27,7 +27,6 @@ impl Filterable for FilterType {
 }
 
 impl FilterType {
-
     fn array(&self, data: Data) -> Result<Data, Error> {
         if let Data::Array(arr) = data {
             Ok(Data::Array(arr))

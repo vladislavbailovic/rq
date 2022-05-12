@@ -8,7 +8,6 @@ mod set;
 pub use set::*;
 
 pub trait Filterable {
-
     fn get_filterables(&self) -> Vec<Box<&dyn Filterable>>;
 
     fn apply(&self, original_data: Data) -> Result<Data, Error> {
@@ -22,7 +21,7 @@ pub trait Filterable {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Filter {
     // TODO: only pub because of parser tests, address this!
     pub sets: Vec<FilterSet>,
@@ -39,13 +38,7 @@ impl Filter {
             self.add_set(s);
         }
         let l = self.sets.len();
-        self.sets[l-1].add(t);
-    }
-}
-
-impl Default for Filter {
-    fn default() -> Self {
-        Self{ sets: Vec::new() }
+        self.sets[l - 1].add(t);
     }
 }
 

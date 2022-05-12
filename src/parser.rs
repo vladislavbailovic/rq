@@ -157,7 +157,7 @@ mod test {
                 return set;
             }
             let l = self.sets.len();
-            for t in self.sets[l-1].list() {
+            for t in self.sets[l - 1].list() {
                 set.push(t);
             }
             return set;
