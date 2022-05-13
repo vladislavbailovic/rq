@@ -1,9 +1,8 @@
 use super::*;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct FilterSet {
-    // TODO: only pub because of parser tests, address this!
-    pub types: Vec<FilterType>,
+    types: Vec<FilterType>,
 }
 
 impl FilterSet {
@@ -37,6 +36,5 @@ mod test {
         let mut s: FilterSet = Default::default();
         s.add(FilterType::Current);
         assert_eq!(s.types.len(), 1);
-        assert_eq!(s.types[0], FilterType::Current);
     }
 }

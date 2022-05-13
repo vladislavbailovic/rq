@@ -7,6 +7,9 @@ pub use r#type::*;
 mod set;
 pub use set::*;
 
+mod group;
+pub use group::*;
+
 pub trait Filterable {
     fn get_filterables(&self) -> Vec<Box<dyn Filterable>>;
 
@@ -23,29 +26,30 @@ pub trait Filterable {
 
 #[derive(Debug, Default)]
 pub struct Filter {
-    // TODO: only pub because of parser tests, address this!
-    pub sets: Vec<FilterSet>,
+    groups: Vec<FilterGroup>,
 }
 
 impl Filter {
+
     pub fn add_set(&mut self, s: FilterSet) {
-        self.sets.push(s);
+        let l = self.groups.len();
+        self.groups[l - 1].add(s);
     }
 
     pub fn add(&mut self, t: FilterType) {
-        if self.sets.is_empty() {
-            let s: FilterSet = Default::default();
-            self.add_set(s);
+        if self.groups.is_empty() {
+            let g: FilterGroup = Default::default();
+            self.groups.push(g);
         }
-        let l = self.sets.len();
-        self.sets[l - 1].add(t);
+        let l = self.groups.len();
+        self.groups[l - 1].add_filter(t);
     }
 }
 
 impl Filterable for Filter {
     fn get_filterables(&self) -> Vec<Box<dyn Filterable>> {
         let mut map: Vec<Box<dyn Filterable>> = Vec::new();
-        for set in &self.sets {
+        for set in &self.groups {
             map.push(Box::new(set.clone()));
         }
         map
