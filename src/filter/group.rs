@@ -26,7 +26,7 @@ impl FilterGroup {
         self.strategy = s;
     }
 
-    pub fn add(&mut self, s: FilterSet) {
+    pub fn add_set(&mut self, s: FilterSet) {
         self.sets.push(s);
     }
 
@@ -83,14 +83,22 @@ mod test {
 
     #[test]
     fn default_is_blank() {
-        let s: FilterGroup = Default::default();
-        assert_eq!(s.sets.len(), 0);
+        let g: FilterGroup = Default::default();
+        assert_eq!(g.sets.len(), 0);
     }
 
     #[test]
-    fn adds_filter_type() {
-        let mut s: FilterGroup = Default::default();
-        s.add_filter(FilterType::Current);
-        assert_eq!(s.sets.len(), 1);
+    fn adds_set() {
+        let mut g: FilterGroup = Default::default();
+        let s: FilterSet = Default::default();
+        g.add_set(s);
+        assert_eq!(g.sets.len(), 1);
+    }
+
+    #[test]
+    fn adds_filter_type_auto_adds_set() {
+        let mut g: FilterGroup = Default::default();
+        g.add_filter(FilterType::Current);
+        assert_eq!(g.sets.len(), 1);
     }
 }

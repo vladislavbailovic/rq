@@ -13,8 +13,8 @@ impl ExpressionParser {
         Self { lex, token: None }
     }
 
-    pub fn parse(&mut self) -> Result<Filter, Error> {
-        let mut filter: Filter = Default::default();
+    pub fn parse(&mut self) -> Result<FilterExpression, Error> {
+        let mut filter: FilterExpression = Default::default();
 
         self.next()?;
         while self.token.is_some() {
@@ -34,20 +34,20 @@ impl ExpressionParser {
                     if let Some(t) = self.lex.peek()? {
                         match t {
                             Token::Word(word) => {
-                                filter.add(FilterType::Entry(word.to_string()));
+                                filter.add_filter(FilterType::Entry(word.to_string()));
                                 self.lex.next()?;
                             }
                             _ => {
-                                filter.add(FilterType::Current);
+                                filter.add_filter(FilterType::Current);
                             }
                         }
                     }
                 }
                 Some(Token::OpenBracket) => {
-                    filter.add(self.parse_bracketed_expression()?);
+                    filter.add_filter(self.parse_bracketed_expression()?);
                 }
                 Some(Token::Word(word)) => match word.as_str() {
-                    "keys" => filter.add(FilterType::Keys),
+                    "keys" => filter.add_filter(FilterType::Keys),
                     _ => return Err(Error::Parser(format!("unknown keyword: {}", word))),
                 },
                 _ => {
