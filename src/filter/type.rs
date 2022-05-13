@@ -26,6 +26,19 @@ impl Filterable for FilterType {
     }
 }
 
+impl std::fmt::Display for FilterType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match self {
+            FilterType::Current => write!(f, "."),
+            FilterType::Array => write!(f, "[]"),
+            FilterType::Keys => write!(f, "keys"),
+            FilterType::Member(n) => write!(f, "[{}]", n),
+            FilterType::Entry(n) => write!(f, "[\"{}\"]", n),
+            FilterType::Range(m, n) => write!(f, "[{}:{}]", m, n),
+        }
+    }
+}
+
 impl FilterType {
     fn array(&self, data: Data) -> Result<Data, Error> {
         if let Data::Array(arr) = data {

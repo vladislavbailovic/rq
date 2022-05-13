@@ -12,10 +12,23 @@ impl Default for FilterExpression {
     }
 }
 
+impl std::fmt::Display for FilterExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for (idx, group) in self.groups.iter().enumerate() {
+            if idx > 0 {
+                write!(f, "{}", &group.strategy)?;
+            }
+            write!(f, "{}", &group)?;
+        }
+        Ok(())
+    }
+}
+
 impl FilterExpression {
     pub fn change_strategy(&mut self, s: DataStrategy) {
-        let l = self.groups.len();
-        self.groups[l - 1].set_strategy(s);
+        if let Some(last) = self.groups.last_mut() {
+            last.strategy = s;
+        }
     }
 
     pub fn add_group(&mut self, g: FilterGroup) {

@@ -11,6 +11,15 @@ impl FilterSet {
     }
 }
 
+impl std::fmt::Display for FilterSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for t in &self.types {
+            write!(f, "{}", &t)?;
+        }
+        Ok(())
+    }
+}
+
 impl Filterable for FilterSet {
     fn get_filterables(&self) -> Vec<Box<dyn Filterable>> {
         let mut map: Vec<Box<dyn Filterable>> = Vec::new();

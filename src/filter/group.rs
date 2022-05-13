@@ -6,10 +6,19 @@ pub enum DataStrategy {
     Concat,
 }
 
+impl std::fmt::Display for DataStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        match &self {
+            DataStrategy::Serial => write!(f, "|"),
+            DataStrategy::Concat => write!(f, ","),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FilterGroup {
+    pub strategy: DataStrategy,
     sets: Vec<FilterSet>,
-    strategy: DataStrategy,
 }
 
 impl Default for FilterGroup {
@@ -21,11 +30,19 @@ impl Default for FilterGroup {
     }
 }
 
-impl FilterGroup {
-    pub fn set_strategy(&mut self, s: DataStrategy) {
-        self.strategy = s;
+impl std::fmt::Display for FilterGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for (idx, set) in self.sets.iter().enumerate() {
+            if idx > 0 {
+                write!(f, "{}", self.strategy)?;
+            }
+            write!(f, "{}", &set)?;
+        }
+        Ok(())
     }
+}
 
+impl FilterGroup {
     pub fn add_set(&mut self, s: FilterSet) {
         self.sets.push(s);
     }
