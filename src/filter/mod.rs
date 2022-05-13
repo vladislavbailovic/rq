@@ -24,12 +24,27 @@ pub trait Filterable {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Filter {
     groups: Vec<FilterGroup>,
 }
 
+impl Default for Filter {
+    fn default() -> Self {
+        let g: FilterGroup = Default::default();
+        Self { groups: vec![g] }
+    }
+}
+
 impl Filter {
+    pub fn change_strategy(&mut self, s: DataStrategy) {
+        let l = self.groups.len();
+        self.groups[l - 1].set_strategy(s);
+    }
+
+    pub fn add_group(&mut self, g: FilterGroup) {
+        self.groups.push(g);
+    }
 
     pub fn add_set(&mut self, s: FilterSet) {
         let l = self.groups.len();

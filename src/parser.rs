@@ -13,6 +13,56 @@ impl ExpressionParser {
         Self { lex, token: None }
     }
 
+    pub fn parse(&mut self) -> Result<Filter, Error> {
+        let mut filter: Filter = Default::default();
+
+        self.next()?;
+        while self.token.is_some() {
+            match &self.token {
+                Some(Token::Bar) => {
+                    let g: FilterGroup = Default::default();
+                    filter.add_group(g);
+                    let s: FilterSet = Default::default();
+                    filter.add_set(s);
+                }
+                Some(Token::Comma) => {
+                    filter.change_strategy(DataStrategy::Concat);
+                    let s: FilterSet = Default::default();
+                    filter.add_set(s);
+                }
+                Some(Token::Dot) => {
+                    if let Some(t) = self.lex.peek()? {
+                        match t {
+                            Token::Word(word) => {
+                                filter.add(FilterType::Entry(word.to_string()));
+                                self.lex.next()?;
+                            }
+                            _ => {
+                                filter.add(FilterType::Current);
+                            }
+                        }
+                    }
+                }
+                Some(Token::OpenBracket) => {
+                    filter.add(self.parse_bracketed_expression()?);
+                }
+                Some(Token::Word(word)) => match word.as_str() {
+                    "keys" => filter.add(FilterType::Keys),
+                    _ => return Err(Error::Parser(format!("unknown keyword: {}", word))),
+                },
+                _ => {
+                    return Err(Error::Parser(format!(
+                        "unexpected token: {}",
+                        self.token.as_ref().unwrap()
+                    )));
+                }
+            }
+            self.next()?;
+        }
+
+        Ok(filter)
+    }
+
     fn next(&mut self) -> Result<(), Error> {
         self.token = self.lex.next()?;
         Ok(())
@@ -103,49 +153,6 @@ impl ExpressionParser {
             }
         }
         ExpressionParser::new_range(start, end)
-    }
-
-    pub fn parse(&mut self) -> Result<Filter, Error> {
-        let mut filter: Filter = Default::default();
-
-        self.next()?;
-        while self.token.is_some() {
-            match &self.token {
-                Some(Token::Bar) => {
-                    let s: FilterSet = Default::default();
-                    filter.add_set(s);
-                }
-                Some(Token::Dot) => {
-                    if let Some(t) = self.lex.peek()? {
-                        match t {
-                            Token::Word(word) => {
-                                filter.add(FilterType::Entry(word.to_string()));
-                                self.lex.next()?;
-                            }
-                            _ => {
-                                filter.add(FilterType::Current);
-                            }
-                        }
-                    }
-                }
-                Some(Token::OpenBracket) => {
-                    filter.add(self.parse_bracketed_expression()?);
-                }
-                Some(Token::Word(word)) => match word.as_str() {
-                    "keys" => filter.add(FilterType::Keys),
-                    _ => return Err(Error::Parser(format!("unknown keyword: {}", word))),
-                },
-                _ => {
-                    return Err(Error::Parser(format!(
-                        "unexpected token: {}",
-                        self.token.as_ref().unwrap()
-                    )));
-                }
-            }
-            self.next()?;
-        }
-
-        Ok(filter)
     }
 }
 

@@ -1,11 +1,31 @@
 use super::*;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
+pub enum DataStrategy {
+    Serial,
+    Concat,
+}
+
+#[derive(Debug, Clone)]
 pub struct FilterGroup {
     sets: Vec<FilterSet>,
+    strategy: DataStrategy,
+}
+
+impl Default for FilterGroup {
+    fn default() -> Self {
+        Self {
+            sets: Vec::new(),
+            strategy: DataStrategy::Serial,
+        }
+    }
 }
 
 impl FilterGroup {
+    pub fn set_strategy(&mut self, s: DataStrategy) {
+        self.strategy = s;
+    }
+
     pub fn add(&mut self, s: FilterSet) {
         self.sets.push(s);
     }
@@ -16,7 +36,27 @@ impl FilterGroup {
             self.sets.push(s);
         }
         let l = self.sets.len();
-        self.sets[l-1].add(t);
+        self.sets[l - 1].add(t);
+    }
+
+    fn apply_serial(&self, original_data: Data) -> Result<Data, Error> {
+        let mut data = original_data;
+        let filterables = self.get_filterables();
+        for filterable in filterables {
+            let new_data = filterable.apply(data)?;
+            data = new_data.clone();
+        }
+        Ok(data)
+    }
+
+    fn apply_concat(&self, original_data: Data) -> Result<Data, Error> {
+        let mut data: Vec<Data> = Vec::new();
+        let filterables = self.get_filterables();
+        for filterable in filterables {
+            let new_data = filterable.apply(original_data.clone())?;
+            data.push(new_data.clone());
+        }
+        Ok(Data::Array(data))
     }
 }
 
@@ -27,6 +67,13 @@ impl Filterable for FilterGroup {
             map.push(Box::new(t.clone()));
         }
         map
+    }
+
+    fn apply(&self, original_data: Data) -> Result<Data, Error> {
+        match self.strategy {
+            DataStrategy::Serial => self.apply_serial(original_data),
+            DataStrategy::Concat => self.apply_concat(original_data),
+        }
     }
 }
 
@@ -47,4 +94,3 @@ mod test {
         assert_eq!(s.sets.len(), 1);
     }
 }
-

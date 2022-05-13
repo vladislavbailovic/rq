@@ -12,6 +12,7 @@ pub enum Token {
     Str(String),
     Dot,
     Bar,
+    Comma,
     Colon,
 }
 
@@ -28,6 +29,7 @@ impl Display for Token {
             Token::CloseBracket => "close bracket".to_string(),
             Token::Dot => "dot".to_string(),
             Token::Bar => "bar".to_string(),
+            Token::Comma => "comma".to_string(),
             Token::Colon => "colon".to_string(),
             Token::Number(num) => format!("number {}", num),
             Token::Word(w) => format!("word {}", w),
@@ -88,6 +90,7 @@ impl<Chars: Iterator<Item = char>> Lexer<Chars> {
                 match c {
                     '.' => Ok(Some(Token::Dot)),
                     '|' => Ok(Some(Token::Bar)),
+                    ',' => Ok(Some(Token::Comma)),
                     ':' => Ok(Some(Token::Colon)),
                     '[' => Ok(Some(Token::OpenBracket)),
                     ']' => Ok(Some(Token::CloseBracket)),
